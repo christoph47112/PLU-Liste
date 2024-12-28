@@ -3,8 +3,8 @@ from docx import Document
 
 def generate_plu_list(mother_file_path, plu_week_file_path, output_doc_path):
     # 1. Daten laden
-    mother_file = pd.ExcelFile(mother_file_path)
-    plu_week_df = pd.read_excel(plu_week_file_path)
+    mother_file = pd.ExcelFile(Mutterdateien_PLU_Final.xlsx)
+    plu_week_df = pd.read_excel(PLU-Woche.xlsx)
 
     # Sicherstellen, dass PLU-Nummern Integer sind
     plu_week_df["PLU"] = plu_week_df["PLU"].astype(int)
