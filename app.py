@@ -21,8 +21,13 @@ def generate_plu_list(mother_file_path, plu_week_file):
     # Umbenennen der Spalte in 'PLU'
     plu_week_df.columns = ['PLU']
 
-    # Sicherstellen, dass die Datei die Spalte `PLU` als Integer enthält
-    plu_week_df["PLU"] = plu_week_df["PLU"].astype(int)
+    # Entferne ungültige Werte (NaN oder inf)
+    plu_week_df = plu_week_df.dropna(subset=["PLU"])  # Entferne Zeilen mit NaN in der PLU-Spalte
+
+    # Sicherstellen, dass die Werte numerisch sind
+    plu_week_df["PLU"] = pd.to_numeric(plu_week_df["PLU"], errors='coerce')  # Konvertiere in numerische Werte
+    plu_week_df = plu_week_df.dropna(subset=["PLU"])  # Entferne Zeilen, die nach der Konvertierung ungültig sind
+    plu_week_df["PLU"] = plu_week_df["PLU"].astype(int)  # Konvertiere die bereinigte Spalte in Integer
 
     # Kategorien aus der Mutterdatei laden
     categories = mother_file.sheet_names
