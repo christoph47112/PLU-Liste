@@ -13,6 +13,7 @@ def generate_plu_list(mother_file_path, plu_week_file):
 
     Rückgabe:
     - BytesIO-Objekt mit der generierten Word-Datei.
+    - DataFrame für die Excel-Ausgabe.
     """
     # 1. Daten laden
     mother_file = pd.ExcelFile(mother_file_path)
@@ -32,6 +33,7 @@ def generate_plu_list(mother_file_path, plu_week_file):
     # Kategorien aus der Mutterdatei laden
     categories = mother_file.sheet_names
     filtered_data = {}
+    pivot_data = []  # Liste zum Speichern der Daten für die Pivot-Ausgabe
 
     # 2. Abgleich der PLU-Nummern und Filtern der Artikel
     for category in categories:
@@ -44,6 +46,13 @@ def generate_plu_list(mother_file_path, plu_week_file):
         matched_data = matched_data.sort_values(by="Artikel").reset_index(drop=True)
         filtered_data[category] = matched_data
 
+        # Füge Kategorie-Informationen hinzu
+        matched_data["Kategorie"] = category
+        pivot_data.append(matched_data)
+
+    # Erstelle ein DataFrame für die Pivot-Ausgabe
+    pivot_df = pd.concat(pivot_data, ignore_index=True)[["Kategorie", "PLU", "Artikel"]]
+
     # 3. Word-Dokument erstellen
     doc = Document()
 
@@ -53,13 +62,20 @@ def generate_plu_list(mother_file_path, plu_week_file):
 
         # PLU-Nummern und Artikel einfügen
         for _, row in data.iterrows():
-            doc.add_paragraph(f"{row['PLU']}	{row['Artikel']}")
+            doc.add_paragraph(f"{row['PLU']}\t{row['Artikel']}")
 
     # 4. Dokument in BytesIO speichern
-    output = BytesIO()
-    doc.save(output)
-    output.seek(0)
-    return output
+    output_word = BytesIO()
+    doc.save(output_word)
+    output_word.seek(0)
+
+    # 5. Pivot-Daten in BytesIO als Excel speichern
+    output_excel = BytesIO()
+    with pd.ExcelWriter(output_excel, engine="xlsxwriter") as writer:
+        pivot_df.to_excel(writer, index=False, sheet_name="PLU List")
+    output_excel.seek(0)
+
+    return output_word, output_excel
 
 # Streamlit App
 st.title("PLU List Generator")
@@ -75,15 +91,21 @@ if st.button("Generate PLU List"):
         try:
             with st.spinner("Processing..."):
                 # PLU-Liste generieren
-                output_file = generate_plu_list(MOTHER_FILE_PATH, uploaded_plu_week_file)
+                output_word, output_excel = generate_plu_list(MOTHER_FILE_PATH, uploaded_plu_week_file)
 
-            # Download-Link für die Datei anzeigen
+            # Download-Links für die Dateien anzeigen
             st.success("PLU List successfully generated!")
             st.download_button(
-                label="Download PLU List",
-                data=output_file,
+                label="Download PLU List (Word)",
+                data=output_word,
                 file_name="plu_list.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+            st.download_button(
+                label="Download PLU List (Excel)",
+                data=output_excel,
+                file_name="plu_list.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
         except ValueError as e:
             st.error(f"Input Error: {str(e)}")
