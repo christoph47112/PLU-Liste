@@ -13,7 +13,7 @@ def generate_plu_list(mother_file_path, plu_week_file):
 
     Rückgabe:
     - BytesIO-Objekt mit der generierten Word-Datei.
-    - DataFrame für die Excel-Ausgabe.
+    - DataFrame für die Excel-Ausgabe im kategorisierten Format.
     """
     # 1. Daten laden
     mother_file = pd.ExcelFile(mother_file_path)
@@ -33,7 +33,7 @@ def generate_plu_list(mother_file_path, plu_week_file):
     # Kategorien aus der Mutterdatei laden
     categories = mother_file.sheet_names
     filtered_data = {}
-    pivot_data = []  # Liste zum Speichern der Daten für die Pivot-Ausgabe
+    categorized_data = {"Gemüse Gewichtsware": [], "Gemüse Stückware": [], "Obst Gewichtsware": [], "Obst Stückware": []}
 
     # 2. Abgleich der PLU-Nummern und Filtern der Artikel
     for category in categories:
@@ -46,12 +46,15 @@ def generate_plu_list(mother_file_path, plu_week_file):
         matched_data = matched_data.sort_values(by="Artikel").reset_index(drop=True)
         filtered_data[category] = matched_data
 
-        # Füge Kategorie-Informationen hinzu
-        matched_data["Kategorie"] = category
-        pivot_data.append(matched_data)
-
-    # Erstelle ein DataFrame für die Pivot-Ausgabe
-    pivot_df = pd.concat(pivot_data, ignore_index=True)[["Kategorie", "PLU", "Artikel"]]
+        # Kategorisiere die Daten basierend auf der Kategorie
+        if "Gewicht" in category and "Gemüse" in category:
+            categorized_data["Gemüse Gewichtsware"].extend(matched_data.values.tolist())
+        elif "Stück" in category and "Gemüse" in category:
+            categorized_data["Gemüse Stückware"].extend(matched_data.values.tolist())
+        elif "Gewicht" in category and "Obst" in category:
+            categorized_data["Obst Gewichtsware"].extend(matched_data.values.tolist())
+        elif "Stück" in category and "Obst" in category:
+            categorized_data["Obst Stückware"].extend(matched_data.values.tolist())
 
     # 3. Word-Dokument erstellen
     doc = Document()
@@ -69,10 +72,12 @@ def generate_plu_list(mother_file_path, plu_week_file):
     doc.save(output_word)
     output_word.seek(0)
 
-    # 5. Pivot-Daten in BytesIO als Excel speichern
+    # 5. Kategorisierte Excel-Ausgabe erstellen
     output_excel = BytesIO()
     with pd.ExcelWriter(output_excel, engine="xlsxwriter") as writer:
-        pivot_df.to_excel(writer, index=False, sheet_name="PLU List")
+        for sheet_name, data in categorized_data.items():
+            df = pd.DataFrame(data, columns=["PLU", "Artikel"])
+            df.to_excel(writer, index=False, sheet_name=sheet_name)
     output_excel.seek(0)
 
     return output_word, output_excel
@@ -102,9 +107,9 @@ if st.button("Generate PLU List"):
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             )
             st.download_button(
-                label="Download PLU List (Excel)",
+                label="Download PLU List (Excel - Categorized)",
                 data=output_excel,
-                file_name="plu_list.xlsx",
+                file_name="plu_list_categorized.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
         except ValueError as e:
