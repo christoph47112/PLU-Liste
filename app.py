@@ -32,8 +32,7 @@ def generate_plu_list(mother_file_path, plu_week_file):
 
     # Kategorien aus der Mutterdatei laden
     categories = mother_file.sheet_names
-    filtered_data = {}
-    categorized_data = {"Gemüse Gewichtsware": [], "Gemüse Stückware": [], "Obst Gewichtsware": [], "Obst Stückware": []}
+    filtered_data = []
 
     # 2. Abgleich der PLU-Nummern und Filtern der Artikel
     for category in categories:
@@ -44,22 +43,16 @@ def generate_plu_list(mother_file_path, plu_week_file):
 
         matched_data = pd.merge(plu_week_df, category_data, on="PLU", how="inner")
         matched_data = matched_data.sort_values(by="Artikel").reset_index(drop=True)
-        filtered_data[category] = matched_data
+        matched_data["Kategorie"] = category
+        filtered_data.append(matched_data)
 
-        # Kategorisiere die Daten basierend auf der Kategorie
-        if "Gewicht" in category and "Gemüse" in category:
-            categorized_data["Gemüse Gewichtsware"].extend(matched_data.values.tolist())
-        elif "Stück" in category and "Gemüse" in category:
-            categorized_data["Gemüse Stückware"].extend(matched_data.values.tolist())
-        elif "Gewicht" in category and "Obst" in category:
-            categorized_data["Obst Gewichtsware"].extend(matched_data.values.tolist())
-        elif "Stück" in category and "Obst" in category:
-            categorized_data["Obst Stückware"].extend(matched_data.values.tolist())
+    # Kombiniere alle Daten zu einem DataFrame
+    combined_df = pd.concat(filtered_data, ignore_index=True)
 
     # 3. Word-Dokument erstellen
     doc = Document()
 
-    for category, data in filtered_data.items():
+    for category, data in combined_df.groupby("Kategorie"):
         # Kategorie als Überschrift
         doc.add_heading(category, level=1)
 
@@ -72,12 +65,20 @@ def generate_plu_list(mother_file_path, plu_week_file):
     doc.save(output_word)
     output_word.seek(0)
 
-    # 5. Kategorisierte Excel-Ausgabe erstellen
+    # 5. Erstelle eine Pivot-ähnliche Tabelle
+    pivot_table = combined_df.pivot_table(
+        values="PLU",
+        index=["Kategorie"],
+        columns=["Artikel"],
+        aggfunc=lambda x: ', '.join(map(str, x)),
+        fill_value=""
+    )
+
+    # Speichere die Tabelle als Excel
     output_excel = BytesIO()
     with pd.ExcelWriter(output_excel, engine="xlsxwriter") as writer:
-        for sheet_name, data in categorized_data.items():
-            df = pd.DataFrame(data, columns=["PLU", "Artikel"])
-            df.to_excel(writer, index=False, sheet_name=sheet_name)
+        combined_df.to_excel(writer, index=False, sheet_name="Detailed Data")
+        pivot_table.to_excel(writer, sheet_name="Pivot Table")
     output_excel.seek(0)
 
     return output_word, output_excel
@@ -107,9 +108,9 @@ if st.button("Generate PLU List"):
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             )
             st.download_button(
-                label="Download PLU List (Excel - Categorized)",
+                label="Download PLU List (Excel - Pivot Format)",
                 data=output_excel,
-                file_name="plu_list_categorized.xlsx",
+                file_name="plu_list_pivot.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
         except ValueError as e:
