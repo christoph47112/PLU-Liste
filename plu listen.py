@@ -1,10 +1,22 @@
+import streamlit as st
 import pandas as pd
 from docx import Document
+from io import BytesIO
 
-def generate_plu_list(mother_file_path, plu_week_file_path, output_doc_path):
+def generate_plu_list(mother_file, plu_week_file):
+    """
+    Diese Funktion erstellt eine PLU-Liste basierend auf den hochgeladenen Mutterdateien und PLU-Woche-Dateien.
+
+    Parameter:
+    - mother_file: Hochgeladene Excel-Datei (Mutterdatei) als BytesIO.
+    - plu_week_file: Hochgeladene Excel-Datei (PLU-Woche) als BytesIO.
+
+    Rückgabe:
+    - BytesIO-Objekt mit der generierten Word-Datei.
+    """
     # 1. Daten laden
-    mother_file = pd.ExcelFile(Mutterdateien_PLU_Final.xlsx)
-    plu_week_df = pd.read_excel(PLU-Woche.xlsx)
+    mother_file = pd.ExcelFile(mother_file)
+    plu_week_df = pd.read_excel(plu_week_file)
 
     # Sicherstellen, dass PLU-Nummern Integer sind
     plu_week_df["PLU"] = plu_week_df["PLU"].astype(int)
@@ -31,12 +43,35 @@ def generate_plu_list(mother_file_path, plu_week_file_path, output_doc_path):
         for _, row in data.iterrows():
             doc.add_paragraph(f"{row['PLU']}\t{row['Artikel']}")
 
-    # 4. Dokument speichern
-    doc.save(output_doc_path)
+    # 4. Dokument in BytesIO speichern
+    output = BytesIO()
+    doc.save(output)
+    output.seek(0)
+    return output
 
-# Beispielaufruf
-generate_plu_list(
-    mother_file_path="/path/to/mutterdatei.xlsx",
-    plu_week_file_path="/path/to/plu_woche.xlsx",
-    output_doc_path="/path/to/output_plu_list.docx"
-)
+# Streamlit App
+st.title("PLU List Generator")
+
+# Datei-Uploads
+uploaded_mother_file = st.file_uploader("Upload Mother File (Excel)", type="xlsx")
+uploaded_plu_week_file = st.file_uploader("Upload PLU Week File (Excel)", type="xlsx")
+
+if st.button("Generate PLU List"):
+    if uploaded_mother_file and uploaded_plu_week_file:
+        try:
+            with st.spinner("Processing..."):
+                # PLU-Liste generieren
+                output_file = generate_plu_list(uploaded_mother_file, uploaded_plu_week_file)
+
+            # Download-Link für die Datei anzeigen
+            st.success("PLU List successfully generated!")
+            st.download_button(
+                label="Download PLU List",
+                data=output_file,
+                file_name="plu_list.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            )
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
+    else:
+        st.warning("Please upload both the Mother File and the PLU Week File.")
