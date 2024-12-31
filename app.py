@@ -13,7 +13,7 @@ def generate_plu_list(mother_file_path, plu_week_file):
 
     Rückgabe:
     - BytesIO-Objekt mit der generierten Word-Datei.
-    - DataFrame für die Excel-Ausgabe im Pivot-Format.
+    - DataFrame für die Excel-Ausgabe.
     """
     # 1. Daten laden
     mother_file = pd.ExcelFile(mother_file_path)
@@ -51,15 +51,7 @@ def generate_plu_list(mother_file_path, plu_week_file):
         pivot_data.append(matched_data)
 
     # Erstelle ein DataFrame für die Pivot-Ausgabe
-    pivot_df = pd.concat(pivot_data, ignore_index=True)
-
-    # Pivot-Tabelle erstellen: Aufbau mit Kategorien als Überschriften
-    pivot_df = pivot_df.pivot_table(
-        index=["PLU", "Artikel"],
-        columns="Kategorie",
-        aggfunc="size",
-        fill_value=0
-    ).reset_index()
+    pivot_df = pd.concat(pivot_data, ignore_index=True)[["Kategorie", "PLU", "Artikel"]]
 
     # 3. Word-Dokument erstellen
     doc = Document()
@@ -80,7 +72,7 @@ def generate_plu_list(mother_file_path, plu_week_file):
     # 5. Pivot-Daten in BytesIO als Excel speichern
     output_excel = BytesIO()
     with pd.ExcelWriter(output_excel, engine="xlsxwriter") as writer:
-        pivot_df.to_excel(writer, index=False, sheet_name="PLU Pivot")
+        pivot_df.to_excel(writer, index=False, sheet_name="PLU List")
     output_excel.seek(0)
 
     return output_word, output_excel
@@ -110,9 +102,9 @@ if st.button("Generate PLU List"):
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             )
             st.download_button(
-                label="Download PLU List (Excel - Pivot Format)",
+                label="Download PLU List (Excel)",
                 data=output_excel,
-                file_name="plu_list_pivot.xlsx",
+                file_name="plu_list.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
         except ValueError as e:
