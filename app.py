@@ -3,19 +3,19 @@ import pandas as pd
 from docx import Document
 from io import BytesIO
 
-def generate_plu_list(mother_file, plu_week_file):
+def generate_plu_list(mother_file_path, plu_week_file):
     """
-    Diese Funktion erstellt eine PLU-Liste basierend auf den hochgeladenen Mutterdateien und PLU-Woche-Dateien.
+    Diese Funktion erstellt eine PLU-Liste basierend auf der Mutterdatei und der hochgeladenen PLU-Woche-Datei.
 
     Parameter:
-    - mother_file: Hochgeladene Excel-Datei (Mutterdatei) als BytesIO.
+    - mother_file_path: Pfad zur Mutterdatei (Excel).
     - plu_week_file: Hochgeladene Excel-Datei (PLU-Woche) als BytesIO.
 
     Rückgabe:
     - BytesIO-Objekt mit der generierten Word-Datei.
     """
     # 1. Daten laden
-    mother_file = pd.ExcelFile(mother_file)
+    mother_file = pd.ExcelFile(mother_file_path)
     plu_week_df = pd.read_excel(plu_week_file)
 
     # Sicherstellen, dass PLU-Nummern Integer sind
@@ -52,16 +52,18 @@ def generate_plu_list(mother_file, plu_week_file):
 # Streamlit App
 st.title("PLU List Generator")
 
-# Datei-Uploads
-uploaded_mother_file = st.file_uploader("Upload Mother File (Excel)", type="xlsx")
+# Feste Mutterdatei definieren
+MOTHER_FILE_PATH = "mother_file.xlsx"
+
+# Datei-Upload für die PLU-Woche
 uploaded_plu_week_file = st.file_uploader("Upload PLU Week File (Excel)", type="xlsx")
 
 if st.button("Generate PLU List"):
-    if uploaded_mother_file and uploaded_plu_week_file:
+    if uploaded_plu_week_file:
         try:
             with st.spinner("Processing..."):
                 # PLU-Liste generieren
-                output_file = generate_plu_list(uploaded_mother_file, uploaded_plu_week_file)
+                output_file = generate_plu_list(MOTHER_FILE_PATH, uploaded_plu_week_file)
 
             # Download-Link für die Datei anzeigen
             st.success("PLU List successfully generated!")
@@ -74,4 +76,4 @@ if st.button("Generate PLU List"):
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
     else:
-        st.warning("Please upload both the Mother File and the PLU Week File.")
+        st.warning("Please upload the PLU Week File.")
