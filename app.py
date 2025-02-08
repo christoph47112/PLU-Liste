@@ -66,31 +66,31 @@ st.title("PLU-Listen Generator")
 MOTHER_FILE_PATH = "mother_file.xlsx"
 uploaded_plu_week_file = st.file_uploader("PLU-Wochen-Datei hochladen (Excel)", type="xlsx")
 
-if st.button("Generate PLU List"):
+if st.button("PLU-Liste generieren"):
     if uploaded_plu_week_file:
         try:
             with st.spinner("Processing..."):
                 output_word, output_excel = generate_plu_list(MOTHER_FILE_PATH, uploaded_plu_week_file)
             
-            st.success("PLU List successfully generated!")
+            st.success("PLU-Liste erfolgreich erstellt!")
             st.download_button(
-                label="Download PLU List (Word)",
+                label="PLU-Liste herunterladen (Word)",
                 data=output_word,
                 file_name="plu_list.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             )
             st.download_button(
-                label="Download PLU List (Excel - Pivot Format)",
+                label="PLU-Liste herunterladen (Excel - Pivot-Format)",
                 data=output_excel,
                 file_name="plu_list_pivot.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
         except ValueError as e:
-            st.error(f"Input Error: {str(e)}")
+            st.error(f"Eingabefehler: {str(e)}")
         except Exception as e:
-            st.error(f"An unexpected error occurred: {str(e)}")
+            st.error(f"Ein unerwarteter Fehler ist aufgetreten: {str(e)}")
     else:
-        st.warning("Please upload the PLU Week File.")
+        st.warning("Bitte laden Sie die PLU-Wochen-Datei hoch.")
 
 # Neuer Datenschutzhinweis
 st.markdown("⚠️ **Hinweis:** Diese Anwendung speichert keine Daten und hat keinen Zugriff auf Ihre Dateien.")
