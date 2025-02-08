@@ -22,12 +22,16 @@ def generate_plu_list(mother_file_path, plu_week_file):
     for category in categories:
         category_data = mother_file.parse(category)
         if "PLU" not in category_data.columns or "Artikel" not in category_data.columns:
-            raise ValueError(f"Kategorie '{category}' fehlt PLU oder Artikel.")
+            st.warning(f"Kategorie '{category}' hat keine gültige PLU oder Artikel-Spalte und wird übersprungen.")
+            continue
         
         matched_data = pd.merge(plu_week_df, category_data, on="PLU", how="inner")
         matched_data = matched_data.sort_values(by="Artikel").reset_index(drop=True)
         matched_data["Kategorie"] = category
         filtered_data.append(matched_data)
+    
+    if not filtered_data:
+        raise ValueError("Keine Übereinstimmungen gefunden. Bitte überprüfen Sie die Eingabedateien.")
     
     combined_df = pd.concat(filtered_data, ignore_index=True).drop_duplicates(subset=['PLU'])
     doc = Document()
@@ -40,7 +44,7 @@ def generate_plu_list(mother_file_path, plu_week_file):
         doc.add_heading(category, level=1)
         
         for _, row in data.iterrows():
-            doc.add_paragraph(f"{row['PLU']}	{row['Artikel']}")
+            doc.add_paragraph(f"{row['PLU']}\t{row['Artikel']}")
     
     output_word = BytesIO()
     doc.save(output_word)
@@ -64,7 +68,7 @@ def generate_plu_list(mother_file_path, plu_week_file):
 
 st.title("PLU-Listen Generator")
 MOTHER_FILE_PATH = "mother_file.xlsx"
-uploaded_plu_week_file = st.file_uploader("PLU-Wochen-Datei hochladen (Excel)", type="xlsx")
+uploaded_plu_week_file = st.file_uploader("PLU-Wochen-Datei hochladen (Excel)", type=["xlsx"])
 
 if st.button("PLU-Liste generieren"):
     if uploaded_plu_week_file:
