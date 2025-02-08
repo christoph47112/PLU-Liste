@@ -32,8 +32,11 @@ def generate_plu_list(mother_file_path, plu_week_file):
     combined_df = pd.concat(filtered_data, ignore_index=True)
     doc = Document()
     
+    first_page = True
     for category, data in combined_df.groupby("Kategorie"):
-        doc.add_page_break()
+        if not first_page:
+            doc.add_page_break()
+        first_page = False
         doc.add_heading(category, level=1)
         
         for _, row in data.iterrows():
