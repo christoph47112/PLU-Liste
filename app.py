@@ -2,12 +2,12 @@ import streamlit as st
 import pandas as pd
 from docx import Document
 from io import BytesIO
-import locale
+import unicodedata
 
 st.set_page_config(page_title="PLU Listen Anwendung")
 
-# Setze die Sortierung auf deutsche Lokaleinstellungen
-locale.setlocale(locale.LC_ALL, 'de_DE.UTF-8')
+def normalize_string(s):
+    return ''.join(c for c in unicodedata.normalize('NFKD', s) if not unicodedata.combining(c))
 
 def generate_plu_list(mother_file_path, plu_week_file):
     """
@@ -29,7 +29,9 @@ def generate_plu_list(mother_file_path, plu_week_file):
             raise ValueError(f"Kategorie '{category}' fehlt PLU oder Artikel.")
         
         matched_data = pd.merge(plu_week_df, category_data, on="PLU", how="inner")
-        matched_data = matched_data.sort_values(by="Artikel", key=lambda x: x.map(locale.strxfrm)).reset_index(drop=True)
+        matched_data["Artikel_normalized"] = matched_data["Artikel"].apply(normalize_string)
+        matched_data = matched_data.sort_values(by="Artikel_normalized").reset_index(drop=True)
+        matched_data.drop(columns=["Artikel_normalized"], inplace=True)
         matched_data["Kategorie"] = category
         filtered_data.append(matched_data)
     
