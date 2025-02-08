@@ -3,8 +3,7 @@ import pandas as pd
 from docx import Document
 from io import BytesIO
 
-st.set_page_config(page_title="PLU-Nummern Anwendung")
-st.title("PLU-Nummern Anwendung")
+st.set_page_config(page_title="PLU Listen Anwendung")
 
 def generate_plu_list(mother_file_path, plu_week_file):
     """
