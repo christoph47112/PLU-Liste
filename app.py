@@ -2,13 +2,8 @@ import streamlit as st
 import pandas as pd
 from docx import Document
 from io import BytesIO
-import unicodedata
 
 st.set_page_config(page_title="PLU Listen Anwendung")
-
-def normalize_text(text):
-    """Entfernt fehlerhafte Zeichen und normalisiert den Text."""
-    return unicodedata.normalize("NFKD", str(text)).encode("ascii", "ignore").decode("ascii")
 
 def generate_plu_list(mother_file_path, plu_week_file):
     """
@@ -30,7 +25,6 @@ def generate_plu_list(mother_file_path, plu_week_file):
             st.warning(f"Kategorie '{category}' hat keine gültige PLU oder Artikel-Spalte und wird übersprungen.")
             continue
         
-        category_data["Artikel"] = category_data["Artikel"].apply(normalize_text)
         matched_data = pd.merge(plu_week_df, category_data, on="PLU", how="inner")
         matched_data = matched_data.sort_values(by="Artikel").reset_index(drop=True)
         matched_data["Kategorie"] = category
@@ -50,7 +44,7 @@ def generate_plu_list(mother_file_path, plu_week_file):
         doc.add_heading(category, level=1)
         
         for _, row in data.iterrows():
-            doc.add_paragraph(f"{row['PLU']} {row['Artikel']}")
+            doc.add_paragraph(f"{row['PLU']}\t{row['Artikel']}")
     
     output_word = BytesIO()
     doc.save(output_word)
