@@ -3,7 +3,7 @@ import pandas as pd
 from docx import Document
 from io import BytesIO
 
-st.set_page_config(page_title="PLU Listen Anwendung")
+st.set_page_config(page_title="PLU_Listen Anwendung")
 
 def generate_plu_list(mother_file_path, plu_week_file):
     """
@@ -42,8 +42,8 @@ def generate_plu_list(mother_file_path, plu_week_file):
         first_page = False
         doc.add_heading(category, level=1)
         
-                for i in range(half_rows):
-                        left_item = f"{data.loc[i, 'PLU']} {data.loc[i, 'Artikel']}" if i < max_rows else ""
+        for i in range(half_rows):
+            left_item = f"{data.loc[i, 'PLU']} {data.loc[i, 'Artikel']}" if i < max_rows else ""
             right_item = f"{data.loc[i + half_rows, 'PLU']} {data.loc[i + half_rows, 'Artikel']}" if (i + half_rows) < max_rows else ""
             doc.add_paragraph(f"{left_item} | {right_item}")
     
