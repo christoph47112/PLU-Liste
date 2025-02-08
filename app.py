@@ -5,14 +5,25 @@ from io import BytesIO
 
 st.set_page_config(page_title="PLU Listen Anwendung")
 
+# Manuelle Ersetzung fehlerhafter Zeichen
+replacement_map = {
+    "": "Ä", "": "ä", "": "ö", "": "ü", "§": "ß",
+    "pfel": "Äpfel", "gro ": "groß ", "geschttet": "geschüttet"
+}
+
+def fix_text(text):
+    if isinstance(text, str):
+        for wrong, correct in replacement_map.items():
+            text = text.replace(wrong, correct)
+    return text
+
 def generate_plu_list(mother_file_path, plu_week_file):
     """
-    Erstellt eine PLU-Liste mit Kategorien auf neuen Seiten.
+    Erstellt eine PLU-Liste mit Kategorien auf neuen Seiten und korrigiert Encoding-Probleme.
     """
     mother_file = pd.ExcelFile(mother_file_path)
     plu_week_df = pd.read_excel(plu_week_file, header=None, names=['PLU'])
     
-    # Entferne ungültige Werte und wandle in Integer um
     plu_week_df = plu_week_df.dropna(subset=["PLU"])
     plu_week_df["PLU"] = pd.to_numeric(plu_week_df["PLU"], errors='coerce').dropna().astype(int)
     
@@ -25,6 +36,7 @@ def generate_plu_list(mother_file_path, plu_week_file):
             st.warning(f"Kategorie '{category}' hat keine gültige PLU oder Artikel-Spalte und wird übersprungen.")
             continue
         
+        category_data["Artikel"] = category_data["Artikel"].apply(fix_text)
         matched_data = pd.merge(plu_week_df, category_data, on="PLU", how="inner")
         matched_data = matched_data.sort_values(by="Artikel").reset_index(drop=True)
         matched_data["Kategorie"] = category
@@ -96,6 +108,5 @@ if st.button("PLU-Liste generieren"):
     else:
         st.warning("Bitte laden Sie die PLU-Wochen-Datei hoch.")
 
-# Neuer Datenschutzhinweis
 st.markdown("⚠️ **Hinweis:** Diese Anwendung speichert keine Daten und hat keinen Zugriff auf Ihre Dateien.")
 st.markdown("🌟 **Erstellt von Christoph R. Kaiser mit Hilfe von Künstlicher Intelligenz.**")
