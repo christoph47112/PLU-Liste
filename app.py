@@ -3,6 +3,9 @@ import pandas as pd
 from docx import Document
 from io import BytesIO
 
+st.set_page_config(page_title="PLU-Nummern Anwendung")
+st.title("PLU-Nummern Anwendung")
+
 def generate_plu_list(mother_file_path, plu_week_file):
     """
     Erstellt eine PLU-Liste mit Kategorien auf neuen Seiten.
@@ -86,3 +89,7 @@ if st.button("Generate PLU List"):
             st.error(f"An unexpected error occurred: {str(e)}")
     else:
         st.warning("Please upload the PLU Week File.")
+
+# Neuer Datenschutzhinweis
+st.markdown("⚠️ **Hinweis:** Diese Anwendung speichert keine Daten und hat keinen Zugriff auf Ihre Dateien.")
+st.markdown("🌟 **Erstellt von Christoph R. Kaiser mit Hilfe von Künstlicher Intelligenz.**")
