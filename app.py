@@ -60,9 +60,9 @@ def generate_plu_list(mother_file_path, plu_week_file):
     
     return output_word, output_excel
 
-st.title("PLU List Generator")
+st.title("PLU-Listen Generator")
 MOTHER_FILE_PATH = "mother_file.xlsx"
-uploaded_plu_week_file = st.file_uploader("Upload PLU Week File (Excel)", type="xlsx")
+uploaded_plu_week_file = st.file_uploader("PLU-Wochen-Datei hochladen (Excel)", type="xlsx")
 
 if st.button("Generate PLU List"):
     if uploaded_plu_week_file:
