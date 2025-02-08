@@ -29,7 +29,7 @@ def generate_plu_list(mother_file_path, plu_week_file):
         matched_data["Kategorie"] = category
         filtered_data.append(matched_data)
     
-    combined_df = pd.concat(filtered_data, ignore_index=True)
+    combined_df = pd.concat(filtered_data, ignore_index=True).drop_duplicates(subset=['PLU'])
     doc = Document()
     
     first_page = True
