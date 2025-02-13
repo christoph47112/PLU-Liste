@@ -26,14 +26,20 @@ def generate_plu_list(mother_file, plu_week_file):
     for category in categories:
         category_data = mother_file.parse(category)
         if "PLU" not in category_data.columns or "Artikel" not in category_data.columns:
-            raise ValueError(f"Kategorie '{category}' fehlt PLU oder Artikel.")
+            continue  # Überspringe Kategorien, die nicht die benötigten Spalten enthalten
         
         matched_data = pd.merge(plu_week_df, category_data, on="PLU", how="inner")
+        if matched_data.empty:
+            continue  # Überspringe leere Datensätze
+        
         matched_data["Artikel_normalized"] = matched_data["Artikel"].apply(normalize_string)
         matched_data = matched_data.sort_values(by="Artikel_normalized").reset_index(drop=True)
         matched_data.drop(columns=["Artikel_normalized"], inplace=True)
         matched_data["Kategorie"] = category
         filtered_data.append(matched_data)
+    
+    if not filtered_data:
+        raise ValueError("Keine passenden Daten gefunden.")
     
     combined_df = pd.concat(filtered_data, ignore_index=True).drop_duplicates(subset=['PLU'])
     doc = Document()
@@ -52,21 +58,7 @@ def generate_plu_list(mother_file, plu_week_file):
     doc.save(output_word)
     output_word.seek(0)
     
-    pivot_table = combined_df.pivot_table(
-        values="PLU",
-        index=["Kategorie"],
-        columns=["Artikel"],
-        aggfunc=lambda x: ', '.join(map(str, x)),
-        fill_value=""
-    )
-    
-    output_excel = BytesIO()
-    with pd.ExcelWriter(output_excel, engine="xlsxwriter") as writer:
-        combined_df.to_excel(writer, index=False, sheet_name="Detailed Data")
-        pivot_table.to_excel(writer, sheet_name="Pivot Table")
-    output_excel.seek(0)
-    
-    return output_word, output_excel
+    return output_word
 
 st.title("PLU-Listen Generator")
 
@@ -80,7 +72,7 @@ if st.button("PLU-Liste generieren"):
         try:
             mother_file = uploaded_mother_file if uploaded_mother_file else MOTHER_FILE_PATH
             with st.spinner("Processing..."):
-                output_word, output_excel = generate_plu_list(mother_file, uploaded_plu_week_file)
+                output_word = generate_plu_list(mother_file, uploaded_plu_week_file)
             
             st.success("PLU-Liste erfolgreich erstellt!")
             st.download_button(
@@ -88,12 +80,6 @@ if st.button("PLU-Liste generieren"):
                 data=output_word,
                 file_name="plu_list.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            )
-            st.download_button(
-                label="PLU-Liste herunterladen (Excel - Pivot-Format)",
-                data=output_excel,
-                file_name="plu_list_pivot.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             )
         except ValueError as e:
             st.error(f"Eingabefehler: {str(e)}")
