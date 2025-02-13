@@ -9,11 +9,11 @@ st.set_page_config(page_title="PLU Listen Anwendung")
 def normalize_string(s):
     return ''.join(c for c in unicodedata.normalize('NFKD', s) if not unicodedata.combining(c))
 
-def generate_plu_list(mother_file_path, plu_week_file):
+def generate_plu_list(mother_file, plu_week_file):
     """
     Erstellt eine PLU-Liste mit Kategorien auf neuen Seiten.
     """
-    mother_file = pd.ExcelFile(mother_file_path)
+    mother_file = pd.ExcelFile(mother_file)
     plu_week_df = pd.read_excel(plu_week_file, header=None, names=['PLU'])
     
     # Entferne ungültige Werte und wandle in Integer um
@@ -69,14 +69,18 @@ def generate_plu_list(mother_file_path, plu_week_file):
     return output_word, output_excel
 
 st.title("PLU-Listen Generator")
+
+uploaded_mother_file = st.file_uploader("Optionale Mutterdatei hochladen (Excel)", type="xlsx")
 MOTHER_FILE_PATH = "mother_file.xlsx"
+
 uploaded_plu_week_file = st.file_uploader("PLU-Wochen-Datei hochladen (Excel)", type="xlsx")
 
 if st.button("PLU-Liste generieren"):
     if uploaded_plu_week_file:
         try:
+            mother_file = uploaded_mother_file if uploaded_mother_file else MOTHER_FILE_PATH
             with st.spinner("Processing..."):
-                output_word, output_excel = generate_plu_list(MOTHER_FILE_PATH, uploaded_plu_week_file)
+                output_word, output_excel = generate_plu_list(mother_file, uploaded_plu_week_file)
             
             st.success("PLU-Liste erfolgreich erstellt!")
             st.download_button(
