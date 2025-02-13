@@ -22,12 +22,14 @@ def generate_plu_list(mother_file, plu_week_file):
     
     categories = mother_file.sheet_names
     filtered_data = []
+    available_plu = set()
     
     for category in categories:
         category_data = mother_file.parse(category)
         if "PLU" not in category_data.columns or "Artikel" not in category_data.columns:
             continue  # Überspringe Kategorien, die nicht die benötigten Spalten enthalten
         
+        available_plu.update(category_data["PLU"].astype(int).tolist())
         matched_data = pd.merge(plu_week_df, category_data, on="PLU", how="inner")
         if matched_data.empty:
             continue  # Überspringe leere Datensätze
@@ -39,6 +41,9 @@ def generate_plu_list(mother_file, plu_week_file):
         filtered_data.append(matched_data)
     
     if not filtered_data:
+        st.error("Keine passenden Daten gefunden.")
+        st.write("Verfügbare PLUs in der Mutterdatei:", sorted(available_plu))
+        st.write("PLUs in der PLU-Wochen-Datei:", sorted(plu_week_df["PLU"].tolist()))
         raise ValueError("Keine passenden Daten gefunden.")
     
     combined_df = pd.concat(filtered_data, ignore_index=True).drop_duplicates(subset=['PLU'])
